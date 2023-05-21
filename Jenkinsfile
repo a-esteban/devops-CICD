@@ -1,26 +1,31 @@
 pipeline {
   agent any
-
+  options {
+    buildDiscarder(logRotator(numToKeepStr: '5'))
+  }
+  environment {
+    DOCKERHUB_CREDENTIALS = credentials('docker-hub')
+  }
   stages {
     stage('Build') {
       steps {
-        echo 'Building...'
+        sh 'docker build -t arethesteban/devops-CICD:nginx-devops-v$BUILD_NUMBER .'
       }
     }
-
-    stage('Test') {
-      steps {
-        echo 'Running tests...'
-        // Add your test commands here
+    stage('Login') {
+  steps {
+  sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
       }
     }
-
-    stage('Deploy') {
+    stage('Push') {
       steps {
-        echo 'Deploying...'
-        // Add your deployment commands here
+        sh 'docker push arethesteban/devops-CICD:nginx-devops-v$BUILD_NUMBER'
       }
     }
   }
+  post {
+    always {
+      sh 'docker logout'
+    }
+  }
 }
-
